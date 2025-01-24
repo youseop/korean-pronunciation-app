@@ -246,6 +246,7 @@ const App: React.FC = () => {
     if (e.value) {
       const recognizedText = e.value[0];
       setRecognizedText(recognizedText);
+      console.log('인식된 텍스트:', recognizedText);
       const score = calculateSimilarity(targetWord, recognizedText);
       setSimilarityScore(score);
     }
@@ -310,7 +311,6 @@ const App: React.FC = () => {
       
       const uri = recording.getURI();
       console.log('녹음 파일 위치:', uri);
-      console.log('인식된 텍스트:', recognizedText);
     } catch (err) {
       console.error('녹음 중지 실패', err);
     }
