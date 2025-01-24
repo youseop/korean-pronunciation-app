@@ -1,6 +1,6 @@
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Animated } from 'react-native';
 import { Audio } from 'expo-av';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Voice, { SpeechResultsEvent } from '@react-native-voice/voice';
 
 // 한글 자음/모음 가중치 설정
@@ -197,12 +197,16 @@ const calculateSimilarity = (target: string, input: string): number => {
 const App: React.FC = () => {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const isRecordingRef = useRef(false);  // 추가: 현재 녹음 상태를 추적하는 ref
   const [recognizedText, setRecognizedText] = useState<string>('');
   const [isListening, setIsListening] = useState(false);
   const [similarityScore, setSimilarityScore] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const progressAnim = useRef(new Animated.Value(0)).current;
   
   const targetWord = "안녕하세요";
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     Voice.onSpeechStart = () => {
@@ -242,14 +246,38 @@ const App: React.FC = () => {
     };
   }, []);
 
+  const startProgressBar = () => {
+    setProgress(1); // 프로그레스 표시 시작
+    progressAnim.setValue(0);
+    Animated.timing(progressAnim, {
+      toValue: 100,
+      duration: 2000,
+      useNativeDriver: false
+    }).start();
+  };
+
   const onSpeechResults = async (e: SpeechResultsEvent) => {
     if (e.value) {
       const recognizedText = e.value[0];
       setRecognizedText(recognizedText);
-      await stopRecording();
       console.log('인식된 텍스트:', recognizedText);
-      const score = calculateSimilarity(targetWord, recognizedText);
-      setSimilarityScore(score);
+      
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
+      
+      startProgressBar(); // 프로그레스 바 시작
+      
+      silenceTimeoutRef.current = setTimeout(async () => {
+        console.log('타이머 실행. isRecordingRef:', isRecordingRef.current);
+        
+        if (isRecordingRef.current) {
+          await stopRecording();
+          const score = calculateSimilarity(targetWord, recognizedText);
+          setSimilarityScore(score);
+        }
+        setProgress(0); // 프로그레스 바 리셋
+      }, 2000);
     }
   };
 
@@ -275,19 +303,29 @@ const App: React.FC = () => {
 
   async function startRecording() {
     try {
-      await Voice.start('ko-KR');
+      console.log('녹음 시작 시도');
+      isRecordingRef.current = true;  // ref 업데이트
       setIsRecording(true);
+      await Voice.start('ko-KR');
+      console.log('녹음 시작 성공. isRecordingRef:', isRecordingRef.current);
     } catch (err) {
       console.error('녹음 시작 실패', err);
+      isRecordingRef.current = false;  // ref 업데이트
+      setIsRecording(false);
     }
   }
 
   async function stopRecording() {
     try {
+      console.log('녹음 중지 시도. 현재 isRecordingRef:', isRecordingRef.current);
       await Voice.stop();
+      isRecordingRef.current = false;  // ref 업데이트
       setIsRecording(false);
+      console.log('녹음 중지 성공');
     } catch (err) {
       console.error('녹음 중지 실패', err);
+      isRecordingRef.current = false;  // ref 업데이트
+      setIsRecording(false);
     }
   }
 
@@ -298,13 +336,32 @@ const App: React.FC = () => {
       <Text style={styles.targetWord}>목표 단어: {targetWord}</Text>
       
       <TouchableOpacity
-        style={[styles.button, isRecording && styles.recordingButton]}
+        style={[
+          styles.button, 
+          isRecording && styles.recordingButton,
+          progress > 0 && styles.disabledButton
+        ]}
         onPress={isRecording ? stopRecording : startRecording}
+        disabled={progress > 0}
       >
         <Text style={styles.buttonText}>
           {isRecording ? '녹음 중지' : '녹음 시작'}
         </Text>
       </TouchableOpacity>
+
+      {progress > 0 && (
+        <View style={styles.progressBarContainer}>
+          <Animated.View 
+            style={[
+              styles.progressBar, 
+              { height: progressAnim.interpolate({
+                inputRange: [0, 100],
+                outputRange: ['0%', '100%']
+              })}
+            ]} 
+          />
+        </View>
+      )}
 
       {error && (
         <View style={styles.errorContainer}>
@@ -419,6 +476,25 @@ const styles = StyleSheet.create({
     color: '#c62828',
     fontSize: 14,
     textAlign: 'center',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  progressBarContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'transparent',
+    zIndex: -1,
+  },
+  progressBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: '100%',
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
   },
 });
 
