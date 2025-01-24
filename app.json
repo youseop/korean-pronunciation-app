@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "korean-pronunciation-app",
+    "slug": "korean-pronunciation-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "이 앱은 발음 연습을 위해 마이크를 사용합니다.",
+        "NSSpeechRecognitionUsageDescription": "이 앱은 발음 평가를 위해 음성 인식 기능을 사용합니다."
+      },
+      "bundleIdentifier": "com.anonymous.koreanpronunciationapp"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.koreanpronunciationapp"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "@react-native-voice/voice",
+        {
+          "microphonePermission": "마이크 사용을 허용하시겠습니까?"
+        }
+      ]
+    ]
+  }
+}
