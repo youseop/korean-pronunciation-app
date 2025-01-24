@@ -242,10 +242,11 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const onSpeechResults = (e: SpeechResultsEvent) => {
+  const onSpeechResults = async (e: SpeechResultsEvent) => {
     if (e.value) {
       const recognizedText = e.value[0];
       setRecognizedText(recognizedText);
+      await stopRecording();
       console.log('인식된 텍스트:', recognizedText);
       const score = calculateSimilarity(targetWord, recognizedText);
       setSimilarityScore(score);
@@ -274,43 +275,17 @@ const App: React.FC = () => {
 
   async function startRecording() {
     try {
-      console.log('녹음 권한 요청');
-      const permission = await Audio.requestPermissionsAsync();
-      console.log('녹음 권한 상태:', permission.status);
-      
-      if (permission.status !== 'granted') {
-        console.error('마이크 권한이 거부됨');
-        return;
-      }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      console.log('녹음 시작');
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      setRecording(recording);
+      await Voice.start('ko-KR');
       setIsRecording(true);
-      
-      // 녹음 시작과 함께 음성 인식 시작
-      await startListening();
     } catch (err) {
       console.error('녹음 시작 실패', err);
     }
   }
-  async function stopRecording() {
-    if (!recording) return;
 
+  async function stopRecording() {
     try {
-      await recording.stopAndUnloadAsync();
-      await stopListening();
+      await Voice.stop();
       setIsRecording(false);
-      
-      const uri = recording.getURI();
-      console.log('녹음 파일 위치:', uri);
     } catch (err) {
       console.error('녹음 중지 실패', err);
     }
