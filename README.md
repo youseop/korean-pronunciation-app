@@ -23,3 +23,4 @@ A mobile application that helps users practice Korean pronunciation through real
 ## Installation
 
 1. Clone the repository:
+![Frame 410](https://github.com/user-attachments/assets/973ead6b-b110-4c46-b5dc-9224d880cdff)
